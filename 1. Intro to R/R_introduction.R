@@ -1,4 +1,4 @@
-# Intro to R Day 1
+# Intro to R Day 2
 
 ######## Topics #######
 # Getting help
@@ -27,6 +27,12 @@ help.start()  # opens the links to online manuals and miscellaneous materials
 # Or, open help tab (at right) and type name in
 # Or, google it! (There are great R forums)
 
+## YOUR TURN ##
+#find the help file for the function that finds the maximum of the values within a given vector or matrix
+
+
+
+
 # ----- Working Directories ---------
 # Determine your working directory
 
@@ -36,7 +42,20 @@ getwd()
 #   or by using "Set as working director" in the "More"
 #   option in the "Files" tab on the right
 
-setwd('/Users/Haldre/Desktop/')
+setwd('/Users/Haldre/Desktop') #Why doesn't this work on your laptop?
+
+# Working Directories & RStudio Projects
+#when you are using projects, the working directory will automatically be set to the same folder as the Project. 
+#If you want to access something within the project, you need to add the path to that file. 
+
+
+## YOUR TURN ##
+#Figure out where your working directory is currently located
+
+#set the working directory to your desktop (hint: can use the Session - Set working directory GUI to do this, and then see what the code is)
+
+#set the working directory back to the project directory
+
 
 
 # ----- Using R as a calculator ------
@@ -61,37 +80,13 @@ cos(pi)
 #  |  or
 
 
+## YOUR TURN ##
+# Do some math! 
+#1) There is a group of 10 people who are ordering pizza. If each person gets 2 slices and each pizza has 4 slices, how many pizzas should they order?
 
+#2) Ask R whether 3.1415932 is greater than pi
 
-
-# ----- Functions ------
-
-# Have form: function(argument,argument,argument,...)
-
-# Here, curve is the function and it can interpret
-#   the 2*x as the function I want to graph and
-#   "from" and "to" as arguments to specify x axis length
-
-?curve #see what the help file says
-
-curve(2*x, from=0,to=8)
-
-
-
-
-
-# ----- Downloading new packages ------
-
-# If the function you want is in a
-#   different package, use install.packages() (or use Packages tab in RStudio)
-
-install.packages("lme4")
-
-# To load this so R can use it, use library() (or check box in Packages tab on RStudio)
-
-library(lme4)
-
-
+#3) What is your age cubed? 
 
 
 
@@ -123,6 +118,48 @@ dogAges <- cbind(dogAges, dogAges2)
 dogAges
 
 
+## YOUR TURN ##
+#create a vector of the heights (in inches) of everyone at your table
+
+
+# ----- Functions ------
+
+# Have form: function(argument,argument,argument,...)
+
+# Here, curve is the function and it can interpret
+#   the 2*x as the function I want to graph and
+#   "from" and "to" as arguments to specify x axis length
+
+?curve #see what the help file says
+
+curve(2*x, from=0,to=8)
+
+
+## YOUR TURN ##
+
+#use the mean function to take the average of the heights at your table
+
+#what are the default arguments for the mean function? Include them in your code. 
+
+#Use the "trim" argument to remove 0.25 from each end of your height vector before calcluating the mean. what did this do?  
+
+
+# ----- Downloading new packages ------
+
+# If the function you want is in a
+#   different package, use install.packages() (or use Packages tab in RStudio)
+
+install.packages("lme4")
+
+# To load this so R can use it, use library() (or check box in Packages tab on RStudio)
+
+library(lme4)
+
+
+## YOUR TURN ##
+#install the tidyverse package (or really, suite of packages)
+
+#load tidyverse
 
 # ----- Preparing and loading data files into R ------
 
@@ -131,14 +168,21 @@ dogAges
 # Read file using read.csv, naming it something. Note that this must be in your 
 # working directory
 
-spider <- read.csv("1. Intro to R/spider.csv", header = TRUE)
+spider <- read.csv("1. Intro to R/data/spider.csv", header = TRUE)
 
 # You can also use use file.choose()
 spider <- read.csv(file.choose())
 
+# Reading in excel files is easy too, with readxl package
+library(readxl)
 
+spiderprey <- read_excel("1. Intro to R/data/Prey_Capture_Final_Do_Not_Touch.xlsx", sheet = 2)
 
+## Your Turn ##
 
+# 1) Read in the first sheet of the Prey_Capture_Final excel file. Name it something appropriate for the content. 
+
+# 2) Use the Import Dataset tool to bring in the dataset and change the classes of columns to something else (e.g. date, character etc.). Then look at the code that ran in the console below. 
 
 
 # ----- Getting to know your data ------
@@ -157,9 +201,10 @@ dim(spider)
 
 head(spider)
 
-# What are the column names?
+# What are the column names? Row names? 
 
 colnames(spider)
+rownames(spider)
 
 # How are the rows, columns labeled?
 
@@ -181,6 +226,21 @@ spider$survey <- as.factor(spider$survey)
 str(spider)
 
 
+## YOUR TURN ## 
+
+#Using the Spider Prey dataset, do the following: 
+
+#1) Find out what R interprets this object as. 
+
+#2) Determine the dimensions of the dataframe.
+
+#3) Look at the head of the dataset. How many rows does that show?
+
+#4) Look at the column names and row names - are they logical? 
+
+#5) Look at the summary & the structure of your dataframe. 
+
+#6) change the site from a character to a factor class. 
 
 
 
@@ -208,7 +268,13 @@ spider$island
 
 spider[['island']]
 
+## YOUR TURN ### 
 
+#With the spiderprey dataset, answer the following: 
+
+#1) What is the name of the web in the 12th row of data? 
+
+#2) Pull out all of the values in the totalprey column using 3 different approaches. 
 
 
 # ----- Manipulating parts of data tables ------
@@ -223,4 +289,7 @@ spider <- cbind(spider,webs50m)
 # Make sure the new column is there
 head(spider)
 
+## YOUR TURN ###
+#using the spiderprey dataset...
 
+#1) Make a new column that sums values from obs1 to obs8. Check to see if this matches the values in totalprey column. 
