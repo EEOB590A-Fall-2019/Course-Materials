@@ -1,8 +1,7 @@
 #EEB698: Data wrangling Part 2
 
 #Use this script to:
-  #1) Load tidy data
-  #2) Learn how to pipe (%>%)
+  #1) Fix cells within columns
   #3) Subset data (filter, select)
   #4) Summarize data (summarise)
   #5) Group data (group_by)
@@ -20,22 +19,64 @@ transplant <- read_csv("data/tidy/transplant_tidy.csv")
 str(transplant)
 summary(transplant)
 
-##### Step 2) Learn how to pipe #########
-#Each method returns an object, so calls can be chained together in a single statement, without needing variables to store the intermediate results.
-# it takes the output of one statement and makes it the input of the next statement. When describing it, you can think of it as a "THEN".
 
-meanwebGuam <- transplant %>%
-  subset(island == "guam") %>%
-  summarize(mean(websize))
+##### Step 1: Fix cells within columns (e.g. naming, capitalization) #####
 
-# the code chunk above will translate to something like "you take the transplant data, then you subset the guam data and then you calculate the meanwebsize".
+summary(transplant) #need to fix capitalization, spelling, whitespace (maybe)
 
-#Here are four reasons why you should be using pipes in R:
+#1.1: change levels within a column so they are lower case.
+levels(transplant$island)
+transplant$island <- as.factor(tolower(transplant$island))
+transplant$site <- as.factor(tolower(transplant$site))
+levels(transplant$island)
 
-# You'll structure the sequence of your data operations from left to right, as apposed to from inside and out;
-# You'll avoid nested function calls;
-# You'll minimize the need for local variables and function definitions; And
-# You'll make it easy to add steps anywhere in the sequence of operations.
+#1.2: Change levels of a variable. There are a lot of ways to do this. Here are two.
+
+#preferred approach
+transplant$island[transplant$island == "gaum"] <- "guam"
+
+#alternative approach
+levels(transplant$island) <- gsub("siapan", "saipan", levels(transplant$island))
+
+#1.3: Get rid of ghost levels
+levels(transplant$island) # shows you what levels R thinks are part of island
+transplant$island <- droplevels(transplant$island) # or
+transplant$island <- factor(transplant$island)
+levels(transplant$island)
+
+#1.4: Re-order levels within a variable.
+transplant$island <- factor(transplant$island, levels = c("saipan", "guam"))
+levels(transplant$island)
+
+#1.5: delete a certain # of characters from the values within a vector
+#this is saying "keep the 1st-4th elements (start at 1, stop at 4)".
+levels(transplant$site)
+transplant$site<-as.factor(substr(transplant$site, 1, 4))
+levels(transplant$site)
+
+#1.6: Remove trailing whitespace
+transplant$site <- as.factor(trimws(transplant$site))
+
+#1.7: Center continuous predictors and make new column for this variable, may help with convergence
+transplant$websize_c <- as.numeric(scale(transplant$websize))
+
+###############################3
+# 5.3: Deal with dates
+#Change date format to standard yyyymmdd format
+#helpful site: https://www.r-bloggers.com/date-formats-in-r/
+class(transplant$startdate)
+
+#Tell R startdate is a real date in a specific format
+transplant$startdate<-as.Date(transplant$startdate, "%d-%b-%Y") #this is a base function
+
+#repeat for end date, using lubridate instead of as.Date
+transplant$enddate <- dmy(as.character(transplant$enddate))
+
+#now, can do math on your dates!
+transplant$duration <- transplant$enddate - transplant$startdate
+transplant$duration <- as.numeric(transplant$duration)
+summary(transplant$duration)
+
 
 ##### Step 3) Subset data (filter, select)
 #use filter to extract rows according to some category
@@ -83,6 +124,8 @@ transplant %>%
   mutate(webarea = ((websize/2)/100)^2*pi) %>%
   head()
 
+
+
 ##### Step 7) Arrange data by the levels of a particular column (arrange)
 #default goes from low to high
 arrange(transplant, websize)
@@ -95,43 +138,7 @@ transplant %>%
   arrange(desc(websize)) %>%
   head()
 
-##### Step 8) Combine datasets (Join)
-#you have two tables, table x (considered "left" table) and table y (considered "right" table)
-preycap <- read_csv("data/tidy/preycap_tidy.csv")
 
-#Left Join: join matching values from y to x. Return all values of x, and all columns from x and y, but only those from y that match. If multiple matches between x and y, then all combinations are returned.
-leftjoin_transprey <- left_join(transplant, preycap, by = c("island", "site"))
-#Use by = c("col1", "col2", ...) to specify one or more common columns to match on.
-
-#Right Join: join matching values from x to y. Return all rows of y, all columns from x and y, but only those from x that match. As above, if multiple matches, all combinations are returned.
-rightjoin_transprey <- right_join(transplant, preycap, by = c("island" = "island", "site" = "site"))
-#Use a named vector, by = c("col1" = "col2"), to match on columns that have different names in each table. le _join(x, y, by = c("C" = "D"))
-
-#Inner Join: Join data. Retain only rows from x and y that match, and all columns from both. If multiple matches between x and y, then all combination of matches are returned.
-innerjoin_transprey <- inner_join(transplant, preycap, by = c("island", "site"))
-
-#Full Join: Join data. retain all values, all rows from both x and y
-fulljoin_transprey <- full_join(transplant, preycap, (by = c("island", "site")))
-
-#let's figure out why we have 5502 obs and 18 variables for each of these join types
-levels(as.factor(preycap$island))
-levels(transplant$island)
-levels(as.factor(preycap$site))
-levels(transplant$site)
-
-fulljoin_transprey %>%
-  group_by(island, site) %>%
-  summarize(numrows = n())
-
-preycap %>%
-  group_by(island, site) %>%
-  summarize(numrows = n())
-
-transplant %>%
-  group_by(island, site) %>%
-  summarize(numrows = n())
-
-#since there are lots of matches for island and site, you get a row for every combination. i.e. for anao, get 13 rows in transplant each duplicated for 112 rows from preycap, for a total of 1456 rows.
 
 ##### Step 9) Iterate over groups (for loops, purrr)
 #We will get to this later.
