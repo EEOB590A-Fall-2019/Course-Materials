@@ -14,7 +14,6 @@
 #load libraries the classic way
 library(tidyverse) #loads ggplot2, tibble, tidyr, readr, purrr, dplyr, stringr, forcats
 library(readxl) #hadley wickham's package for reading in excel files. not in Tidyverse.
-library(lubridate) #garett grolemund & hadley wickham's package for dates
 
 ##### Step 1 - Load data.  ############
 #There are multiple ways to do this, which impacts your imported dataframe. The key things that vary are how R interprets your blank values & NA's, and how R assigns a class to each column.
@@ -26,7 +25,7 @@ transplant <- read.csv("data/raw/transplant_raw.csv", na.strings = c("", "NA", "
 transplant_csvreadr <- read_csv("data/raw/transplant_raw.csv", na = c("", "NA", "na", " "))
 
 # #option 2: if excel, use readxl(). (note- rest of code works better with read.csv version)
-# transplant_excel <- read_excel("data/raw/transplant_raw.xlsx", sheet = 1, col_names = T, col_types = NULL) #col_types = null is default, and readxl guesses what each column is. by default, readxl converts blank cells to missing data. use na="yourcode" if you have a code you use for missing values.
+transplant_excel <- read_excel("data/raw/transplant_raw.xlsx", sheet = 1, col_names = T, col_types = NULL) #col_types = null is default, and readxl guesses what each column is. by default, readxl converts blank cells to missing data. use na="yourcode" if you have a code you use for missing values.
 
 ##### Step 2: Explore data ##########
 
@@ -42,9 +41,7 @@ names(transplant) #show column names
 #Each function returns an object, so calls can be chained together in a single statement, without needing variables to store the intermediate results.
 # it takes the output of one statement and makes it the input of the next statement. When describing it, you can think of it as a "THEN".
 
-meanwebGuam <- transplant %>%
-  subset(Island == "Guam") %>%
-  summarise(mean(WebSize.cm.))
+# %>%  is piping function
 
 # the code chunk above will translate to something like "you take the transplant data, then you subset the guam data and then you calculate the meanwebsize".
 
@@ -60,7 +57,7 @@ meanwebGuam <- transplant %>%
 # 3.1: Rename column headings
 #Use the rename function in the dplyr package
 #new name is on left, old name is on right.
-transplant <- transplant %>%
+transplant <- transplant %>% 
   rename(island = Island, 
          site = Site, 
          web = Web.., 
@@ -100,7 +97,7 @@ transplant <- transplant %>%
 colnames(transplant)
 
 #4.3: Separate one column into two columns
-transplant <- transplant %>%
+transplant2 <- transplant %>%
   separate(col=web, into=c("web_a", "web_b"), sep="'", remove = F) 
 #remove=F tells R to leave the original column
 
@@ -121,19 +118,19 @@ transplant <- transplant %>%
 
 #5.1: Change data from long to wide format using tidyr::spread()
 transplantwide <- transplant %>%
-  spread(webpres, websize) #the values in webpres will be the new column names, and the columns will be populated by the values in websize
+  spread(key = webpres, value = websize) #the info in webpres will be the new column names, and the columns will be populated by the values in websize
 
 #5.2: Change data from wide to long using tidyr::gather()
 # Gather moves column names into a key column, gathering the column values into a single value column.
-# The arguments to gather(data, key, value, ..., factor_key):
-# data: Data object
+# The arguments to gather(key, value, ..., factor_key):
 # key: Name of new key column (make a new name for the column that will contain the names of the column headings in the wide format)
 # value: Name of new value column (make a new name for this column that will contain the values currently populating the rows in the wide format)
 # ...: Names or column numbers for source columns that contain values (e.g. 10:12)
 # factor_key=T: Treat the new key column as a factor (instead of character vector)
 
 transplant_long <- transplantwide %>%
-  gather(key = "webpres", value = "websize", no, yes) #note that we have now added a row with "NA" for every observation - this is undesirable for analysis, but serves to show how to go from wide to long
+  gather(key = "webpres", value = "websize", no, yes) #this makes a new column called "webpres" populated by "no" or "yes", and then another new column called "websize" populated by the values within the former "no" and "yes" columns. 
+#note that we have now added a row with "NA" for every observation - this is undesirable for analysis, but serves to show how to go from wide to long
 
 ##### Step 6: Change class of columns ############################
 # 6.1: Change class of a single column
