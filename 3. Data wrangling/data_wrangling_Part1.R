@@ -143,12 +143,15 @@ transplant <- transplant %>%
                    factor)
 
 ######## Step 7: Fill in missing values ##############
+#complete function gives you all combinations of the columns you choose. E.g. if you want to make sure you sampled every island on each of every year, and add rows with NA's for data for any island:year combos you missed, use this function. 
+
 transplant_comp <- transplant %>%
   complete(island, site)  #note - this is meaningless, just to show how it works
 
-#can use fill to fill in information from the most recent nonmissing value
+#The Fill function fills in information from the most recent nonmissing value. This is useful when people enter data and fail to fill in repetitive data (e.g. the first 30 rows are from Site A, but they only write Site once on row 1 and assume it follows for the next 29 rows). 
+
 transplant_comp <- transplant_comp %>%
-  fill(web)
+  fill(web) 
 
 ##### Step 8) Combine datasets (Join) ####################
 #you have two tables, table x (considered "left" table) and table y (considered "right" table)
