@@ -1,13 +1,16 @@
 #EEOB590: Data wrangling Part 2
 
 #Use this script to:
-  #1) Fix cells within columns (forcats package & stringr package)
-  #2) Subset data (filter, select)
-  #3) Summarize data (summarise)
-  #4) Group data (group_by)
-  #5) Create new columns (mutate)
-  #6) Arrange data by the levels of a particular column (arrange)
-  #7) Print tidy, wrangled database
+#Part 2: finish getting dataframe tidied and wrangled
+  #1) Fix cells within columns (change class, change names of levels of factor (forcats package), tolower/toupper, reorder levels of factor, trimws, lubridate)
+  #2) Create new columns (mutate)
+  #3) Arrange data by the levels of a particular column (arrange)
+  #4) Print tidied, wrangled database
+
+#Part 3: start subsetting & summarizing
+  #5) Subset data (filter, select)
+  #6) Summarize data (summarise)
+  #7) Group data (group_by)
 
 library("tidyverse")
 library("lubridate")
@@ -39,9 +42,7 @@ transplant <- transplant %>%
 
 levels(transplant$island)
 
-#1.2: Change levels of a variable. There are a lot of ways to do this. Here are two.
-
-#tidyverse approach
+#1.2: Change levels of a variable. There are a lot of ways to do this. Here is the forcats approach
 
 transplant <- transplant %>%
   mutate(island = fct_recode(island, "saipan" = "siapan", "guam" = "gaum"))
@@ -83,6 +84,33 @@ transplant$duration <- transplant$enddate - transplant$startdate
 transplant$duration <- as.numeric(transplant$duration)
 summary(transplant$duration)
 
+###2) Create new columns (mutate) ##################
+transplant$webarea <- ((transplant$websize/2)/100)^2*pi #base R approach; #assume circle, divide in half to get radius, divide by 100 to get from cm to m, calculate area
+
+mutate(transplant, webarea = ((websize/2)/100)^2*pi) #tidyverse
+
+transplant %>%
+  mutate(webarea = ((websize/2)/100)^2*pi) %>%
+  head()      #tidyverse with piping
+
+####3) Arrange rows of data by the levels of a particular column (arrange)
+#default goes from low to high
+arrange(transplant, websize)  #arranging transplant rows based on websize, without using piping
+
+#with piping
+transplant <- transplant %>%
+  arrange(websize)
+
+#use desc inside the arrange fx to go from high to low
+transplant %>%
+  arrange(desc(websize))
+
+###4) Print tidy, wrangled database
+
+write.csv(trans_summ, "data/tidy/transplant_tidy.csv", row.names = F)
+
+########################################################################
+#Part 3: Subsetting and grouping
 
 #2) Subset data (filter, select)
 #use filter to extract rows according to some category
@@ -119,29 +147,9 @@ trans_summ <- transplant %>%
   summarize (avgweb = mean(websize),
             avgduration = mean(duration))
 
-###5) Create new columns (mutate) ##################
-transplant$webarea <- ((transplant$websize/2)/100)^2*pi #base R approach; #assume circle, divide in half to get radius, divide by 100 to get from cm to m, calculate area
-
-mutate(transplant, webarea = ((websize/2)/100)^2*pi) #tidyverse
-
-transplant %>%
-  mutate(webarea = ((websize/2)/100)^2*pi) %>%
-  head()      #tidyverse with piping
 
 
-####6) Arrange data by the levels of a particular column (arrange)
-#default goes from low to high
-arrange(transplant, websize)
-
-transplant %>%
-  arrange(websize)
-
-#use desc inside the arrange fx to go from high to low
-transplant %>%
-  arrange(desc(websize)) %>%
-  head()
-
-###7) Print tidy, wrangled summary database
+###7) Print summary database
 
 write.csv(trans_summ, "data/tidy/transplant_summary.csv", row.names=F)
 

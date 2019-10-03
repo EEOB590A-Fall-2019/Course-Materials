@@ -10,7 +10,7 @@ library(readxl)
 
 #2) Read in data
 
-poll <- read_excel("3. Data wrangling/Data_wrangling_day1_pollination.xlsx")
+poll <- read_excel("data/raw/Data_wrangling_day1_pollination.xlsx")
 
 #3) rename columns. Leave insect families with capital letters, but make all other columns lowercase. Remove any spaces. Change "location" to "site". Change "tract" to "transect". 
 
@@ -21,7 +21,7 @@ poll <- poll %>%
          topbowl = 'Top color - Bowl color',
          other = Other)
 
-colnames(poll2)
+colnames(poll)
 
 #4) Add missing data. Note that the people who entered the data did not drag down the island or location column to fill every row. 
 
@@ -62,9 +62,9 @@ poll_wide <- poll_long %>%
 
 #10) Now, join the "InsectData" with the "CollectionDates" tab on the excel worksheet. You'll need to read it in, and then play around with the various types of 'mutating joins' (i.e. inner_join, left_join, right_join, full_join), to see what each one does to the final dataframe. 
 
-dates <- read_excel("3. Data wrangling/Data_wrangling_day1_pollination.xlsx", sheet = 2)
+dates <- read_excel("data/raw/Data_wrangling_day1_pollination.xlsx", sheet = 2)
 
-polldate_inner <- poll%>%
+polldate_inner <- poll %>%
   inner_join(dates)
 
 polldate_left<- poll%>%
@@ -76,3 +76,8 @@ polldate_right <- poll%>%
 polldate_full <- poll%>%
   full_join(dates)
 
+#create a csv with the long dataframe, including dates
+poll_long <- poll_long %>%
+  inner_join(dates)
+
+write.csv(poll_long, "data/tidy/poll_long_partialtidy.csv")
