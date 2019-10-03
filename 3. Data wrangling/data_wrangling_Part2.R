@@ -1,45 +1,54 @@
-#EEB698: Data wrangling Part 2
+#EEOB590: Data wrangling Part 2
 
 #Use this script to:
-  #1) Fix cells within columns
-  #3) Subset data (filter, select)
-  #4) Summarize data (summarise)
-  #5) Group data (group_by)
-  #6) Create new columns (mutate)
-  #7) Arrange data by the levels of a particular column (arrange)
-  #8) Combine datasets (Join)
-  #9) Iterate over groups (for loops, purrr)
-  #10) Print tidy, wrangled database
+  #1) Fix cells within columns (forcats package & stringr package)
+  #2) Subset data (filter, select)
+  #3) Summarize data (summarise)
+  #4) Group data (group_by)
+  #5) Create new columns (mutate)
+  #6) Arrange data by the levels of a particular column (arrange)
+  #7) Print tidy, wrangled database
 
-source("lib/R_functions/ipak_fx.R") #load ipak function
-ipak(c("tidyverse", "lubridate", "readxl", "magrittr"))
+library("tidyverse")
+library("lubridate")
+library("readxl")
+library("forcats")
 
 ##### Step 1) Load tidy data, explore ########
 transplant <- read_csv("data/tidy/transplant_tidy.csv")
 str(transplant)
 summary(transplant)
 
+#change characters to factors where necessary
+transplant <- transplant %>%
+  mutate_at(vars(island, site, web, native, netting, spidpres), 
+            factor)
 
 ##### Step 1: Fix cells within columns (e.g. naming, capitalization) #####
 
 summary(transplant) #need to fix capitalization, spelling, whitespace (maybe)
 
-#1.1: change levels within a column so they are lower case.
+#1.1: change levels within a column so they are lower case.Note that this creates a character vector, so need to mutate back to factor.
 levels(transplant$island)
-transplant$island <- as.factor(tolower(transplant$island))
-transplant$site <- as.factor(tolower(transplant$site))
+transplant$island <- tolower(transplant$island)
+transplant$site <- tolower(transplant$site)
+levels(transplant$island)
+
+transplant <- transplant %>%
+  mutate_at(vars(island, site), factor)
+
 levels(transplant$island)
 
 #1.2: Change levels of a variable. There are a lot of ways to do this. Here are two.
 
-#preferred approach
-transplant$island[transplant$island == "gaum"] <- "guam"
+#tidyverse approach
 
-#alternative approach
-levels(transplant$island) <- gsub("siapan", "saipan", levels(transplant$island))
+transplant <- transplant %>%
+  mutate(island = fct_recode(island, "saipan" = "siapan", "guam" = "gaum"))
 
-#1.3: Get rid of ghost levels
-levels(transplant$island) # shows you what levels R thinks are part of island
+levels(transplant$island)
+
+#1.3: Get rid of ghost levels (not always necessary, but sometimes you get rid of a level and R still thinks it is there)
 transplant$island <- droplevels(transplant$island) # or
 transplant$island <- factor(transplant$island)
 levels(transplant$island)
@@ -51,7 +60,7 @@ levels(transplant$island)
 #1.5: delete a certain # of characters from the values within a vector
 #this is saying "keep the 1st-4th elements (start at 1, stop at 4)".
 levels(transplant$site)
-transplant$site<-as.factor(substr(transplant$site, 1, 4))
+transplant$site<-as.factor(substr(transplant$site, 1, 4)) #this makes all levels 4 characters long
 levels(transplant$site)
 
 #1.6: Remove trailing whitespace
@@ -60,17 +69,14 @@ transplant$site <- as.factor(trimws(transplant$site))
 #1.7: Center continuous predictors and make new column for this variable, may help with convergence
 transplant$websize_c <- as.numeric(scale(transplant$websize))
 
-###############################3
-# 5.3: Deal with dates
+#1.8: Deal with dates
 #Change date format to standard yyyymmdd format
 #helpful site: https://www.r-bloggers.com/date-formats-in-r/
 class(transplant$startdate)
 
-#Tell R startdate is a real date in a specific format
-transplant$startdate<-as.Date(transplant$startdate, "%d-%b-%Y") #this is a base function
-
-#repeat for end date, using lubridate instead of as.Date
-transplant$enddate <- dmy(as.character(transplant$enddate))
+# use lubridate to tell R the format of hte date
+transplant$startdate <- dmy(transplant$startdate)
+transplant$enddate <- dmy(transplant$enddate)
 
 #now, can do math on your dates!
 transplant$duration <- transplant$enddate - transplant$startdate
@@ -78,33 +84,30 @@ transplant$duration <- as.numeric(transplant$duration)
 summary(transplant$duration)
 
 
-##### Step 3) Subset data (filter, select)
+#2) Subset data (filter, select)
 #use filter to extract rows according to some category
-transplant_guam <- filter(transplant, island == "guam", site == "anao")
-
 transplant_guam <- transplant %>%
-  filter(island == "guam")
+  filter(island == "guam", site == "anao")
 
 #use select to choose columns
-select(transplant, island, site, websize, duration)
+basic_transplant <- transplant %>%
+  select(island, site, websize, duration)
 
 transplant %>%
   select(island, site, websize, duration)
 
-##### Step 4) Summarize data (summarise, count)
+#3) Summarize data (summarise, count) #################3
 #use summarize to compute a table using whatever summary function you want (e.g. mean, length, max, min, sd, var, sum, n_distinct, n, median)
-summarise(transplant, avg=mean(websize), numsites= (length(unique(site))))
-
-transplant %>%
-  summarise(avg=mean(websize), numsites = length(unique(site)))
+trans_summ <- transplant %>%
+  summarise(avg = mean(websize), numsites = n_distinct(site))
 
 #use count to count the number of rows in each group
-count(transplant, site)
+count(transplant, site) #base R approach
 
 transplant %>%
-  count(site)
+  count(site)  #piping approach
 
-##### Step 5) Group data (group_by)
+##### 4 Group data (group_by) ################
 #use group_by to split a dataframe into different groups, then do something to each group
 
 transplant %>%
@@ -116,17 +119,17 @@ trans_summ <- transplant %>%
   summarize (avgweb = mean(websize),
             avgduration = mean(duration))
 
-##### Step 6) Create new columns (mutate)
-mutate(transplant, webarea = ((websize/2)/100)^2*pi) #assume circle, divide in half to get radius, divide by 100 to get from cm to m, calculate area
-transplant$webarea <- ((transplant$websize/2)/100)^2*pi
+###5) Create new columns (mutate) ##################
+transplant$webarea <- ((transplant$websize/2)/100)^2*pi #base R approach; #assume circle, divide in half to get radius, divide by 100 to get from cm to m, calculate area
+
+mutate(transplant, webarea = ((websize/2)/100)^2*pi) #tidyverse
 
 transplant %>%
   mutate(webarea = ((websize/2)/100)^2*pi) %>%
-  head()
+  head()      #tidyverse with piping
 
 
-
-##### Step 7) Arrange data by the levels of a particular column (arrange)
+####6) Arrange data by the levels of a particular column (arrange)
 #default goes from low to high
 arrange(transplant, websize)
 
@@ -138,12 +141,7 @@ transplant %>%
   arrange(desc(websize)) %>%
   head()
 
-
-
-##### Step 9) Iterate over groups (for loops, purrr)
-#We will get to this later.
-
-##### Step 10) Print tidy, wrangled database
+###7) Print tidy, wrangled summary database
 
 write.csv(trans_summ, "data/tidy/transplant_summary.csv", row.names=F)
 

@@ -156,6 +156,8 @@ transplant_comp <- transplant_comp %>%
 ##### Step 8) Combine datasets (Join) ####################
 #you have two tables, table x (considered "left" table) and table y (considered "right" table)
 preycap <- read_csv("data/tidy/preycap_tidy.csv")
+transplant$island <- tolower(transplant$island)
+transplant$site <- tolower(transplant$site)
 
 #Left Join: join matching values from y to x. Return all values of x, and all columns from x and y, but only those from y that match. If multiple matches between x and y, then all combinations are returned.
 leftjoin_transprey <- transplant %>%
@@ -173,13 +175,13 @@ innerjoin_transprey <- transplant %>%
 
 #Full Join: Join data. retain all values, all rows from both x and y
 fulljoin_transprey <- transplant %>%
-  full_join(transplant, preycap, (by = c("island", "site")))
+  full_join(preycap, (by = c("island", "site")))
 
-#let's figure out why we have 5502 obs and 18 variables for each of these join types
+#let's figure out why we have the # of rows & columns for each of these join types
 levels(as.factor(preycap$island))
-levels(transplant$island)
+levels(as.factor(transplant$island))
 levels(as.factor(preycap$site))
-levels(transplant$site)
+levels(as.factor(transplant$site))
 
 fulljoin_transprey %>%
   group_by(island, site) %>%
