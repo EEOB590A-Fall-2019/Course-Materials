@@ -107,7 +107,7 @@ transplant %>%
 
 ###4) Print tidy, wrangled database
 
-write.csv(trans_summ, "data/tidy/transplant_tidy.csv", row.names = F)
+write.csv(transplant, "data/tidy/transplant_tidy_clean.csv", row.names = F)
 
 ########################################################################
 #Part 3: Subsetting and grouping
