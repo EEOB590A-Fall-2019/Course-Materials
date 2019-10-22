@@ -1,6 +1,5 @@
 #Data Exploration and visualization practice exercise
-#Haldre Rogers
-#EEOB590
+#EEOB590A
 
 #Research Question: 
 #does survival of seedlings depend on distance from nearest conspecific adult
@@ -10,7 +9,7 @@ library(skimr)
 library(tidyverse)
 library(DataExplorer)
 
-######### Data preparation ##################
+######### Get Dataset Prepared for Exploration ##################
 
 #1) start with a tidy dataset
 fencesurv <- read.csv("data/tidy/fencesurv_tidy.csv", header=T, na.strings=c("", "NA", "na")) 
@@ -57,32 +56,29 @@ fencesurv <- read.csv("data/tidy/fencesurv_tidy.csv", header=T, na.strings=c("",
 
 #2) check structure to make sure everything is in correct class
 str(fencesurv)
+summary(fencesurv)
 
 #3) Subset to the dataset you will use for the analysis
-#we will use all of the dataset, but if we were to subset, we would use filter. 
-fencesurvkarst <-fencesurv %>%
-  filter(soil=="karst")
+#we will use the whole dataset for now, may subset & re-run later. 
 
-nrow(fencesurvkarst)#88 observations
-
-# We will make a new column for propalive
+#a) Make a new column for propalive by dividing numalive/numseedplant 
 fencesurv <- fencesurv %>%
   mutate(propalive = numalive/numseedplant)
 
 #4) Decide which variables are your response variables and which are your predictors
 # Response: cbind(numalive, numseedplant) or propalive
 # Continuous predictors: distance, centavgopen
-# Categorical predictors: species, substrate, open, parent (?) 
+# Categorical predictors: species
 # Random effects: island (n=4 usually), site (n=3/island)
 
-############ Data Exploration ##########
-#5) try these two functions, from the skimr and DataExplorer packages
+############ Start Data Exploration ##########
+#1) try the skim() functions from the skimr package and the create_report() function from DataExplorer package. Note anything that stands out to you from those. 
 skim(fencesurv)
 create_report(fencesurv)
 
-##########
-#5a) Look for outliers in continuous response & predictor variables. 
-# Use histogram or dotplot, identify outliers
+########## INDIVIDUAL VARIABLES #####################
+#2) Start with your continuous variables. 
+# a) With your continuous response and predictor variables, use ggplot and geom_histogram or dotchart() to look for outliers. 
 
 ggplot(fencesurv, aes(propalive))+
   geom_histogram()
@@ -93,8 +89,7 @@ ggplot(fencesurv, aes(centavgopen))+
 dotchart(fencesurv$propalive) #no outliers
 dotchart(fencesurv$centavgopen) #two outliers, both at far distances and both on Guam - maybe should remove?
 
-##########
-#5b) Zero-inflation in y variable (for count data)? 
+# b) With your continuous response variable, look for zero-inflation (count data only). Are there more than 25% zero's in the response? 
 
 sum(fencesurv$numalive/fencesurv$numseedplant== 0) / length(fencesurv$numalive/fencesurv$numseedplant) #17% zeros
 
@@ -105,26 +100,44 @@ sum(papaya$numalive/papaya$numseedplant== 0) / length(papaya$numalive/papaya$num
 
 with(papaya[papaya$numalive>0,], table(island, dist)) #some alive at each distance on each island, except Saipan far (why is this??)  # check raw data
 
-##########
-# 6a) Collinearity X: correlation between covariates ()
-#Plot each predictor against each other (since categorical, can't test this directly)
-#Look at relationships of Y vs X’s to see if homogenous variances at each X value, linear relationships
-#Plot response against each predictor and random effect. 
-#As long as at least one is continuous, use ggplot (use facet_grid for multiple categorical variables)
-#Use summarize or table for two categorical (ftable for more than 2 categories)
+# c) With your continuous response variable, look for independence. 
+# Are there patterns in the data that are unrelated to the fixed or random effects identified above?  Consider patterns over time, for example. 
 
 
-MyVar <- c("species", "island", "dist", 
-           "centavgopen", "site", "soil")
-pairs(fencesurv[,MyVar], lower.panel = panel.cor)
+# 3) Now, explore your categorical predictors
+# a) assess whether you have adequate sample size. How many observations per level of each of your categorical predictors? Are there any that have fewer than 15 observations?  
 
-###########################
-####Look for missing data and relationships between variables #######
-#
-##check out soil data
+########## RELATIONSHIPS BETWEEN VARIABLES #######################
+# 4) Explore relationships between your predictor variables
+# a) look for correlation/covariation between each of your predictors (fixed & random)
+#If 2 continuous predictors, use ggplot, geom_point to plot against each other, or use pairs()
+#If 1 continuous and 1 categorical predictor, use ggplot with geom_boxplot() 
+#For two categorical predictors, use summarize or table (ftable for more than 2 categories)
+
+MyVar <- c("species", "dist", "centavgopen", "soil", "site", "island")
+pairs(fencesurv[,MyVar])
+
+
+# b) Interactions: need to make sure you have adequate data for any 2-way or 3-way interactions in your model. 
+## We are interested in a species * distance * centavgopen interaction. Do we have adequate sampling across this interaction? 
 mytable<-with(fencesurv, table (species, island, dist, soil)) 
-mytable<- xtabs(~species+island+dist+soil, data=fencesurv)
-ftable(mytable) #not a lot of papaya data for substrate. Lots of substrate/dist/spp/island combos with zero, one or two samples. 
+with(fencesurv, ftable(species, dist, island))
+
+numsamp<- fencesurv %>%
+  group_by(island, species, soil) %>%
+  summarize(count=length(soil))
+
+ggplot(numsamp, aes(soil, count))+
+  geom_boxplot()+
+  facet_grid(species~island)+
+  theme_bw() #some uneven samples - e.g. lots mix on Guam, whereas more soil on Rota and Saipan. 
+
+#check to see which spp we are missing soil or openness data for
+fencesurvNA <- fencesurv %>%
+  filter(is.na(centavgopen) | is.na(soil)) 
+
+summary(fencesurvNA) #mostly papaya, some morinda; lots on tinian missing openness data
+
 
 #openness relative to distance
 ggplot(fencesurv, aes(dist, centavgopen))+
@@ -147,8 +160,8 @@ ggplot(fencesurv, aes(site, centavgopen))+
   #  ylim(0,40) +
   facet_grid(.~island) #lot of heterogeneity, but nothing seems consistent between islands- just site to site differences. #openness data missing for tinian. 
 
-##########
-#plot response against each potential predictor and random effect- linear relationships? 
+# 5) Look at relationships of Y vs X’s to see if variances are similar for each X value, identify the type of relationship (linear, log, etc.)
+#plot each predictor and random effect against the response
 ggplot(fencesurv, aes(dist, numalive/numseedplant))+
   geom_boxplot()+
   facet_grid(soil~species) #some soil data missing for morinda, papaya, aglaia(?)
@@ -174,52 +187,42 @@ ggplot(fencesurv, aes(site, numalive/numseedplant))+
   facet_grid(dist~species) #lot of site differences
 
 ############
-# Interactions- do we have enough data? 
-with(fencesurv, ftable(species, dist, island))
-
-numsamp<- fencesurv %>%
-  group_by(island, species, soil) %>%
-  summarize(count=length(soil))
-
-ggplot(numsamp, aes(soil, count))+
-  geom_boxplot()+
-  facet_grid(species~island)+
-  theme_bw() #some uneven samples - e.g. lots mix on Guam, whereas more soil on Rota and Saipan. 
-
-#check to see which spp we are missing soil or openness data for
-fencesurvNA <- fencesurv %>%
-  filter(is.na(centavgopen) | is.na(soil)) 
-
-summary(fencesurvNA) #mostly papaya, some morinda; lots on tinian missing openness data
-
-############
 #Summary of data exploration
 
-#1: Outliers
+####### 1: Individual variables ########
+#a) Continuous variables (propalive, canopy)
+
+#### Outliers (response & predictors)
 #No outliers in response. Some NA's in response- will need to clean this up. 
 #Some outliers in canopy (high values)- both are far and on Guam. Should remove from analysis. 
-#distance, species and substrate are all categorical. 
 
-#2: Zero-inflation
+#### Zero-inflation (response)
 # 17% zeros. this is distributed unevenly across spp, though, with 56% zeros for papaya.Keep an eye on papaya- low sample size. 
 
-#3: Collinearity: No strong collinearities. Heterogeneity, though. 
-
-#4: Linearity & homogeneity- relationship of Y vs X's. 
-# potential nonlinear relationship between centavgopen and propsurvival (saturating?) but maybe the link function will take care of this? 
-# heterogeneity in a variety of response factors. 
-
-#5: Independence Y- 
+#### Independence (response)
 # random effects of site and island warranted. Note- 4 levels of island, 3-5 levels of site within island so many would question this as a random effect because not enough levels. Also, not all spp planted on all islands. 
 # temporal correlation: all samples taken at same time, but could look at effect of age of seedlings on prop survival
 # I don't think there would be spatial correlation beyond site, but could examine response against latitude. 
 
-#6: Interactions - do we have enough data? 
-#Low numbers of papaya, and then have to remove lots bc no soil data. 
-#low numbers for some soil:species:island interactions. 
-#No neiso planted on Rota, no Psychotria planted on Tinian
-#
-#decided not to analyze soil relationships because we are missing soil data for a significant number of plants. 
+#b) Categorical predictors and Random effects (island, soil, species)
+# Low numbers of papaya 
+# missing soil data for a significant number of plants. 
+
+####### 2: Multiple  variables ########
+#a: Predictor vs predictor
+
+#### Collinearity: No strong collinearities. Heterogeneity, though. 
+
+#### Interactions - do we have enough data? 
+#species * soil: many papaya are lacking soil data. 
+#soil*species*island: missing data on some of these intearctions 
+#island * species: No neiso planted on Rota, no Psychotria planted on Tinian
+
+#b: Predictor vs response: 
+#### Linearity & homogeneity- relationship of Y vs X's. 
+# potential nonlinear relationship between centavgopen and propsurvival (saturating?) but maybe the link function will take care of this? 
+# heterogeneity in a variety of response factors. 
+
 
 #############################################
 #remove two extreme datapoints with really high canopy open values because they are only on Guam and at far distances - have undue influence
