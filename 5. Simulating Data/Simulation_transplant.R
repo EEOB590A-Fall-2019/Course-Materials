@@ -25,6 +25,10 @@ snetwebsize <- rnorm(n=21, mean=c(54), sd = c(10)) #simulate saipan with net
 snonetwebsize <- rnorm(n=21, mean=c(49), sd = c(8)) #simulate saipan without net
 response <- c(gnetwebsize, gnonetwebsize, snetwebsize, snonetwebsize)
 
+gpois <- rpois(n=21, lambda=54)
+gunif <- runif(n=21, 40, 64)
+gbinom <- rbinom(n=21, size=1, .1)
+
 #simulate predictors
 
 island <- rep(c("guam", "saipan"), each = 42)
