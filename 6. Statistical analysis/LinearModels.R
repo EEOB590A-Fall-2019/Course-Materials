@@ -1,4 +1,4 @@
-######Spider Web Size Analysis ######
+###### Linear models - Spider Web Size Analysis ######
 
 #Research Question: 
 #1) Do spiders build smaller webs when birds are present? If so, then web size should be smaller on Saipan than on Guam. Does it depend on whether the web was transplanted or found in place (i.e. native)?
@@ -43,7 +43,7 @@ nrow(transplant) #91 rows
 #using all data
 #websize~island*native, family=gaussian  #by default, an identity link
 
-webmod1 <- lm(websize~island*native, data=transplant)
+webmod1 <- lm(websize~island*native, transplant)
 summary(webmod1)
 anova(webmod1) #should avoid if unbalanced sample sizes
 
@@ -138,7 +138,9 @@ plot(x=transplant$site, y=E1) #residual variance larger at Guam sites than Saipa
 #### Hypothesis testing ##############
 #You have your model. How do you interpret the results? 
 
-#Option 1: emmeans - to test for differences between levels of a factor
+#Option 1: If you have only continuous predictors, or 
+
+#Option 2: If you have multiple levels of a factor, will need a post-hoc test to assess differences between levels of the factor. There are several options, but emmeans is a good one. 
 webmod1_classic <- lm(websize~island, data=transplant)
 anova(webmod1)
 
