@@ -2,6 +2,8 @@
 
 #We are going to work with a dataset on plant traits. We will test whether leaf thickness differs between tree species and island. Today, we will only do data exploration and model building/selection. We will assess model fit and interpret model results next week. 
 
+#Helpful scripts to have open while you work on this include: DataExplorationDay2_practice_answers.R, DataExplorationDay2.R, and LinearModels.R (from class Tuesday)
+
 #Response: thickness (leaf thickness)
 #Predictors: species, island
 #Random effects: none for right now, but could add some later
