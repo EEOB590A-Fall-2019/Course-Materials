@@ -131,10 +131,6 @@ plot(x = F1,
      cex.lab = 1.5)
 abline(h = 0, lty = 2)
 
-plot(x=transplant$island, y=E1) #heterogeneity in residuals bt islands
-plot(x=transplant$native, y=E1) #heterogeneity in residuals wrt native
-plot(x=transplant$site, y=E1) #residual variance larger at Guam sites than Saipan sites, but homogeneity bt sites within an island
-
 #### Hypothesis testing ##############
 #You have your model. How do you interpret the results? 
 
@@ -150,6 +146,7 @@ summary(webmod1_classic)
 
 #can use emmeans to test for main effects when there is an interaction present. 
 natisl <- pairs(emmeans(webmod1, ~native | island)) #to test whether there are differences between native & not native given that you are on Guam or Saipan
+natisl
 
 #Option 2: confidence intervals
 confint(webmod1) #Intercept is guam, with transplanted spiders. Only the intercept has confidence intervals that do not cross zero, so no difference using this approach. 
@@ -163,32 +160,27 @@ webmod_mm<-lmer(websize ~ island+native + (1|site), data=transplant)
 summary(webmod_mm) #no p-values! 
 
 #explore model fit 
+resid_panel(webmod_mm)
+resid_xpanel(webmod_mm)
 
-#extract residuals
-E1 <- resid(webmod_mm, type = "pearson")
-
-#plot fitted vs residuals
-F1 <- fitted(webmod_mm, type = "response")
-
-par(mfrow = c(2,2), mar = c(5,5,2,2))
-plot(x = F1, 
-     y = E1, 
-     xlab = "Fitted values",
-     ylab = "Pearson residuals", 
-     cex.lab = 1.5)
-abline(h = 0, lty = 2)
-
-plot(x=transplant$island, y=E1) #heterogeneity in residuals bt islands
-plot(x=transplant$native, y=E1) #heterogeneity in residuals wrt native
-plot(x=transplant$site, y=E1) #residual variance larger at Guam sites than Saipan sites, but homogeneity bt sites within an island
+#a small amount of heterogeneity in residuals bt islands
+#a small amount of heterogeneity in residuals wrt native
+#residual variance slightly larger at Guam sites than Saipan sites, but homogeneity bt sites within an island
 
 ### GLM #######
 
 #need to change spidpres to 1's and 0's
-spidmod <- lmer(spidpres ~ island+native, family = binomial, data=transplant)
-summary(spidmod) #no p-values! 
 
+transplant$spidpresbin <- ifelse(transplant$spidpres == "yes",1 ,0)
 
+transplant %>%
+        count(spidpresbin)
+
+spidmod <- glm(spidpresbin ~ island+native, family = binomial, data=transplant)
+summary(spidmod) 
+
+resid_panel(spidmod)
+resid_xpanel(spidmod) #need to fix this. 
 
 ### Sums of Squares and contrasts  ################
 
