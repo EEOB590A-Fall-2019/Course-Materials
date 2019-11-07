@@ -33,7 +33,7 @@ traits <- traits %>%
 #4. Now categorical predictors. Do you have an adequate sample size? How many measurements per level of island and per level of species? 
 
 ## Explore relationships between variables
-#5) Check for correlations between predictors, or for categorical predictors, check to see if the sampling for each species is spread across each island. This is also useful for seeing whether you have adequate samples to run an island * site interaction. Try using group_by() and count(), and then graphing it using geom_bar() and facet_grid(). 
+#5) Check for correlations between predictors, or for categorical predictors, check to see if the sampling for each species is spread across each island. This is also useful for seeing whether you have adequate samples to run an island * species interaction. Try using group_by() and count(), and then graphing it using geom_bar() and facet_grid(). 
 
 
 #6) Look at relationships of Y vs X’s to see if variances are similar for each X value, identify the type of relationship (linear, log, etc.)

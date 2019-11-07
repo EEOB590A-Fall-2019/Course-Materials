@@ -14,6 +14,7 @@ library(emmeans) #for post-hoc test
 library(tidyverse)
 library(ggResidpanel)
 library(car) #note, may need to install "openxlsx" package too and choosing "no" when they ask if you want to install from sources which need compilation. 
+library(lmerTest) #automatically loads lme4 package
 
 transplant<-read.csv("data/tidy/transplant_tidy_clean.csv", header=T)
 nrow(transplant) #91 rows
@@ -113,7 +114,7 @@ plot(webmod1)
 
 #even better, use ggResidpanel
 resid_panel(webmod1)
-resid_compare(list(webmod1, webmod_classic)) #to compare two models
+resid_compare(list(webmod1, webmod3)) #to compare two models
 resid_xpanel(webmod1) #to plot residuals against predictor variables
 
 ###### Code to run fitted and residuals by hand ####3
@@ -134,53 +135,88 @@ abline(h = 0, lty = 2)
 #### Hypothesis testing ##############
 #You have your model. How do you interpret the results? 
 
-#Option 1: If you have only continuous predictors, or 
+#Option 1: If you have only continuous predictors, or two levels within a factor, can use anova(model) or summary(model) 
+webmod3<-lm(websize~island, data=transplant)
+anova(webmod3) #island is a significant predictor. 
+summary(webmod3) #spiders on Saipan make webs that are 5.2 cm smaller than those on Guam. 
 
-#Option 2: If you have multiple levels of a factor, will need a post-hoc test to assess differences between levels of the factor. There are several options, but emmeans is a good one. 
-webmod1_classic <- lm(websize~island, data=transplant)
-anova(webmod1)
+#Option 2: If you have multiple levels of a factor, or interactions between factors, will need a post-hoc test to assess differences between levels of the factor or combinations involved in the interaction. There are several options, but emmeans is a good one (also see glht in multcomp). 
 
-isl <- pairs(emmeans(webmod1_classic, ~island)) # to test whether there are differences between guam & saipan given a particular native status
+#For the purposes of demonstration, we will use the full model with the interaction here, even though the best fitting model has only island as a predictor. 
+
+isl <- emmeans(webmod1, pairwise ~ island*native) # to test whether there are differences between guam & saipan given a particular native status
 isl #shows p-value;compare to
 summary(webmod1_classic)
 
+isl_contrasts <- isl$contrasts %>%
+        summary(infer = TRUE)
+        as.data.frame()
+
 #can use emmeans to test for main effects when there is an interaction present. 
-natisl <- pairs(emmeans(webmod1, ~native | island)) #to test whether there are differences between native & not native given that you are on Guam or Saipan
+#emmeans tutorial is here: https://aosmith.rbind.io/2019/03/25/getting-started-with-emmeans/
+
+natisl <- emmeans(webmod1, pairwise ~native | island) #to test whether there are differences between native & not native given that you are on Guam or Saipan
 natisl
 
 #Option 2: confidence intervals
-confint(webmod1) #Intercept is guam, with transplanted spiders. Only the intercept has confidence intervals that do not cross zero, so no difference using this approach. 
+confint(webmod3) #Intercept is guam. The coefficients for Saipan have confidence intervals that do not cross zero, so can conclude Saipan is different from Guam. 
 
+#Option 3: Classic model comparison with Likelihood Ratio Tests
+#Best fitting model was: 
+webmod3<-lm(websize~island, data=transplant)
+#can use either Option 1 or Option 2 above. 
+
+#Option 4: Information Theoretic approach
+#Best fitting model was: 
+webmod3<-lm(websize~island, data=transplant)
+
+#interpretation of results: island is an important predictor of websize, but native is not. Graphically, can see that Saipan webs are smaller than Guam webs.
 
 ### LMER ########
 #in this model, we have added a random effect of site
+#we will use lmerTest package. Tutorial is here: http://www2.compute.dtu.dk/courses/02930/SummerschoolMaterialWeb/Readingmaterial/MixedModels-TuesdayandFriday/Packageandtutorialmaterial/lmerTestTutorial.pdf
 
-library(lme4)
-webmod_mm<-lmer(websize ~ island+native + (1|site), data=transplant)
-summary(webmod_mm) #no p-values! 
+webmod_mm<-lmer(websize ~ island*native + (1|site), data=transplant)
+summary(webmod_mm) 
+
+#Let's remove the non-significant interaction, and then continue with model. 
+webmod_mm2<-lmer(websize ~ island+native + (1|site), data=transplant)
+summary(webmod_mm2)
+
+#note- could also use the step function to reduce model
+step(webmod_mm)
 
 #explore model fit 
-resid_panel(webmod_mm)
-resid_xpanel(webmod_mm)
+resid_panel(webmod_mm2)
+resid_xpanel(webmod_mm2)
+#model fit is adequate. Normality, linearity, and homogeneity are all ok. 
 
-#a small amount of heterogeneity in residuals bt islands
-#a small amount of heterogeneity in residuals wrt native
-#residual variance slightly larger at Guam sites than Saipan sites, but homogeneity bt sites within an island
+#Interpret model results
+summary(webmod_mm2) #The intercept (Guam, not native) is different from zero (not a big surprise), but Saipan is not different from Guam, and Native="yes" is not different from Native ="no"
+
+confint(webmod_mm2) #to get confidence intervals. 
 
 ### GLM #######
 
 #need to change spidpres to 1's and 0's
-
 transplant$spidpresbin <- ifelse(transplant$spidpres == "yes",1 ,0)
 
 transplant %>%
         count(spidpresbin)
 
-spidmod <- glm(spidpresbin ~ island+native, family = binomial, data=transplant)
+#Run glm with family = binomial 
+spidmod <- glm(spidpresbin ~ island*netting, family = binomial, data=transplant)
 summary(spidmod) 
 
-resid_panel(spidmod)
-resid_xpanel(spidmod) #need to fix this. 
+#check model fit
+resid_panel(spidmod) #QQplot doesn't look very good. I'm not sure why. We will move forward with this for now. 
+
+#interpret results
+summary(spidmod) #the effect of netting depends on the island. 
+
+#post-hoc test
+islnetting <- emmeans(spidmod, pairwise ~ island*netting)
+islnetting #surprisingly, no differences here. 
 
 ### Sums of Squares and contrasts  ################
 
