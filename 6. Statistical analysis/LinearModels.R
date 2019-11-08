@@ -146,10 +146,10 @@ summary(webmod3) #spiders on Saipan make webs that are 5.2 cm smaller than those
 
 isl <- emmeans(webmod1, pairwise ~ island*native) # to test whether there are differences between guam & saipan given a particular native status
 isl #shows p-value;compare to
-summary(webmod1_classic)
+summary(webmod1)
 
 isl_contrasts <- isl$contrasts %>%
-        summary(infer = TRUE)
+        summary(infer = TRUE) %>%
         as.data.frame()
 
 #can use emmeans to test for main effects when there is an interaction present. 

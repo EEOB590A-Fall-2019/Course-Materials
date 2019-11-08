@@ -98,6 +98,7 @@ anova(thick2, thick4)
 anova(thick3, thick5)
 anova(thick4, thick5)
 
+anova(thick1,thick2,thick3,thick4)
 #Option 4: Create a full model and all submodels and compare AIC values to choose the best fitting model
 
 thick1 <- lm(thickness ~ island*species, data = traits)
