@@ -1,8 +1,7 @@
 ###########
 # Introduction to ggplot2
-# LunchinatoRs
 # Author: Haldre Rogers
-# last updated 5 November 2018
+# last updated 12 November 2019 
 
 #### References ######
 # Super useful cheatsheet: https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf 
@@ -11,7 +10,6 @@
 # 
 # Other resources
 # http://www.r-graph-gallery.com/ 
-# https://github.com/Gibbsdavidl/CatterPlots - make scatter plots with cat shaped points!
 # http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html check out this website for a whole bunch of ideas & code for graphs
 
 ############
@@ -19,12 +17,11 @@ library(tidyverse)
 library(ggplot2)
 library(ggthemes)
 library(lme4)
-library(plyr)
 
 ##############################
 
 #Read in seed data and location of seed traps.  
-pstraps<-read.csv("data/pstraps.csv", header=TRUE)
+pstraps<-read.csv("data/tidy/pstraps.csv", header=TRUE)
 
 #Dataset is to examine the proportion of seeds that are handled relative to distance from the nearest conspecific. This does not include traps that caught 0 seeds, or traps on Guam
 
@@ -46,32 +43,32 @@ summary(pstraps$prop)
 #########################################
 #1 Geometric Objects
 
-#plot just a single variable
+#1a) plot just a single variable
 #continuous x
-ggplot(pstraps, aes(prop))+
+ggplot(pstraps, aes(prop)) +
   geom_histogram() #default stat for geom_histogram is "bin"
 
-ggplot(pstraps, aes(prop))+
-  geom_histogram(stat="bin", bins=5)
+ggplot(pstraps, aes(prop)) +
+  geom_histogram(stat = "bin", bins = 5)
 
 #categorical x
 ggplot(pstraps, aes(island))+
-  geom_bar(stat="count") #default stat for geom_bar is count. Count takes a count of the number of cases, need categorical x variable, and no y-variable. 
+  geom_bar(stat = "count") #default stat for geom_bar is count. Count takes a count of the number of cases, need categorical x variable, and no y-variable. 
 
-#plot x and y variables
-ggplot(data=pstraps, aes(x=island, y=prop))+
+#1b) plot x and y variables
+ggplot(data = pstraps, aes(x = island,y = prop)) +
   geom_boxplot()
 
-ggplot(pstraps, aes(island, prop))+
+ggplot(pstraps, aes(island, prop)) +
   geom_violin()
 
-p1 <- ggplot(data=pstraps, aes(x=island, y=prop))+
+p1 <- ggplot(data = pstraps, aes(x = island, y = prop)) +
   geom_boxplot()
 
-p1+geom_violin() #add a second layer to p1 ggplot
+p1 + geom_violin() #add a second layer to p1 ggplot to compare violin and boxplots
 
-ggplot(data=pstraps, aes(x=island, y=handled))+
-  geom_bar(stat="identity") #stat="identity" produces a bar graph of values not counts. Need x and y variables for this. 
+ggplot(data=pstraps, aes(x = island, y = handled))+
+  geom_bar(stat = "identity") #stat="identity" produces a bar graph of values not counts. Need x and y variables for this. 
 #this website is useful http://www.cookbook-r.com/Graphs/Bar_and_line_graphs_(ggplot2)/
 
 ggplot(data=pstraps, aes(x=mindist, y=prop))+
@@ -84,46 +81,47 @@ ggplot(pstraps, aes(mindist, prop))+
 ggplot(economics, aes(date, unemploy)) + 
   geom_line()
 
-ggplot(pstraps, aes(mindist, prop))+
-  geom_line(stat="summary", fun.y="mean") #default stat used. alternative statistical transformations are possible. 
-
-#add vertical and horizontal lines
+#1c) add vertical and horizontal lines
 ggplot(pstraps, aes(mindist, prop))+
   geom_point()+
   geom_hline(yintercept=0.5)+
   geom_vline(xintercept=4)
 
 ggplot()+
-  geom_hline(yintercept=0.5) #shortest line of code for ggplot graph? 
+  geom_hline(yintercept = 0.5) #shortest possible line of code for ggplot graph? 
 
 #########################################
 #2 Add prediction lines to graph
 #use model results
-m1 <- glm(cbind(handled, total-handled) ~ mindist, data = pstraps, family=binomial)
-pstraps$pred <- predict(m1, type="response")
+m1 <- glm(cbind(handled, total-handled) ~ mindist, data = pstraps, family = binomial)
+pstraps$pred <- predict(m1, type = "response")
 
-ggplot(pstraps, aes(mindist, prop))+
-  geom_point()+
-  geom_line(aes(y=pred))
+ggplot(pstraps, aes(mindist, prop)) +
+  geom_point() +
+  geom_line(aes(y = pred))
 
 #use stat_smooth
-ggplot(pstraps, aes(mindist, prop))+
-  geom_point()+
-  geom_smooth() #default method is loess, dark shaded band is +/- confidence intervals
+ggplot(pstraps, aes(mindist, prop)) +
+  geom_point() +
+  geom_smooth() #default method is loess, dark shaded band is +/- confidence intervals. Note that these confidence intervals go above 1, which is impossible. 
 
-ggplot(pstraps, aes(mindist, prop))+
-  geom_point()+
-  geom_smooth(method="glm", method.args=list(family="binomial")) 
+ggplot(pstraps, aes(mindist, prop)) +
+  geom_point() +
+  geom_smooth(method = "glm", method.args=list(family = "binomial")) 
 #I'd use predict approach above- this is to show you the geom_smooth option. 
 
 ###### Add error bars to graph ##############
 #Option 1- based on raw data
 #First need to calculate error and create new dataframe
-sumpstraps <- ddply(pstraps, c("island"), summarise,
-               N    = length(total),
-               mean = mean(total),
-               sd   = sd(total),
-               se   = sd / sqrt(N))
+sumpstraps <- pstraps %>%
+  group_by(island) %>%
+  summarise(N = length(total), mean = mean(total), sd   = sd(total), se   = sd / sqrt(N))
+
+sumpstraps <-ddply(pstraps, c("island"), summarise,
+       N = length(total),
+       mean = mean(total),
+       sd   = sd(total),
+       se   = sd / sqrt(N))
 
 ggplot(sumpstraps, aes(island, mean))+
   geom_point(stat="identity")+
@@ -131,7 +129,7 @@ ggplot(sumpstraps, aes(island, mean))+
 
 
 #####Option 2- based on model output#####
-m1<-glm(total ~ island, data = pstraps, family=poisson)
+m1 <- glm(total ~ island, data = pstraps, family=poisson) #poisson uses a log link
 
 #create dataframe over which to predict model results
 preddata <- with(pstraps, expand.grid(island = levels(island)))
@@ -172,11 +170,11 @@ ggplot(pstraps, aes(mindist, prop))+
   geom_text(aes(label=island), size = 3) #not super useful here, but you can see how this might be helpful
 
 #change formula to include island
-pstraps$pred <- predict(glm(cbind(handled, total-handled) ~ mindist*island, data = pstraps, family=binomial), type="response")
+pstraps$pred <- predict(glm(cbind(handled, total-handled) ~ mindist*island, data = pstraps, family=binomial), type = "response")
 
-ggplot(pstraps, aes(mindist, prop, color=island))+
-  geom_point(aes(size=total))+
-  geom_line(aes(y=pred))
+ggplot(pstraps, aes(mindist, prop, color = island)) +
+  geom_point(aes(size = total))+
+  geom_line(aes(y = pred))
 
 #########################################
 #4) Scales - Controlling Aesthetic Mapping
@@ -248,6 +246,12 @@ ggplot(pstraps, aes(mindist, prop, color=island))+
 
 #try theme_grey, theme_linedraw, theme_light, theme_fivethirtyeight, theme_economist, theme_few, theme_wsj, theme_tufte
 
+#To change font of all elements of the theme at the same time, use theme_classic(base_size = 12) (can use any specialized theme for this)
+ggplot(pstraps, aes(mindist, prop, color=island))+
+  geom_point(aes(size=total))+
+  geom_line(aes(y=pred))+
+  theme_classic(base_size = 40)
+
 #you can adjust aspects of the theme manually
 ggplot(pstraps, aes(mindist, prop, color=island))+
   geom_point(aes(size=total))+
@@ -280,6 +284,18 @@ mindist_graph<-ggplot(pstraps, aes(mindist, prop, color=island))+
 ggsave("mindist.pdf", width=4, height=4, units="in")
 
 ggsave("mindist.png", width=4, height=4, units="in")
+
+#7) Putting multiple graphs on same figure
+#egg, #cowplot, and #gridExtra are packages that are helpful for this
+library(egg)
+ggarrange(mindist_graph, p1)
+
+library(cowplot) #plot_grid
+plot_grid(mindist_graph, p1)
+
+library(gridExtra) #grid.arrange function
+grid.arrange(mindist_graph, p1)
+
 
 ######## Other stuff #####################
 
